@@ -9,6 +9,9 @@ import { toast } from 'sonner';
 
 type View = 'topics' | 'study' | 'history';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   const [currentView, setCurrentView] = useState<View>('topics');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);

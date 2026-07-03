@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { RotateCcw } from 'lucide-react';
 import { Card as CardType, Rating } from '@/lib/types';
 
 interface FlashcardProps {
@@ -23,6 +24,10 @@ export function Flashcard({
 
   const handleFlip = () => {
     setIsFlipped(true);
+  };
+
+  const handleFlipBack = () => {
+    setIsFlipped(false);
   };
 
   const handleRate = (rating: Rating) => {
@@ -100,9 +105,21 @@ export function Flashcard({
         </div>
       ) : (
         <div className="space-y-6">
-          <p className="text-center text-lg font-medium text-muted-foreground">
-            How well did you know this?
-          </p>
+          <div className="flex items-center justify-center gap-4">
+            <p className="text-center text-lg font-medium text-muted-foreground">
+              How well did you know this?
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleFlipBack}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+              title="Show question again"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span className="text-sm">Show Question</span>
+            </Button>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Button
               variant="outline"

@@ -2,23 +2,44 @@ import { supabase } from './supabase';
 import { Card, TopicWithCount } from './types';
 
 export async function getTopics(): Promise<TopicWithCount[]> {
-  const { data, error } = await supabase
-    .from('cards')
-    .select('topic')
-    .order('topic');
+  // Try RPC function first for efficiency
+  const { data: rpcData, error: rpcError } = await supabase.rpc('get_topic_counts');
 
-  if (error) {
-    throw new Error(`Failed to fetch topics: ${error.message}`);
+  if (!rpcError && rpcData) {
+    return (rpcData || []).sort((a: TopicWithCount, b: TopicWithCount) => a.topic.localeCompare(b.topic));
   }
 
-  const topicCounts = data.reduce((acc: Record<string, number>, row) => {
-    acc[row.topic] = (acc[row.topic] || 0) + 1;
-    return acc;
-  }, {});
+  // Fallback: Get distinct topics first, then count each one
+  console.warn('RPC get_topic_counts not found, using fallback method');
+  
+  // First, get all distinct topics by fetching with high limit
+  const { data: allCards, error: cardsError } = await supabase
+    .from('cards')
+    .select('topic')
+    .limit(10000);
 
-  return Object.entries(topicCounts)
-    .map(([topic, count]) => ({ topic, count }))
-    .sort((a, b) => a.topic.localeCompare(b.topic));
+  if (cardsError) {
+    throw new Error(`Failed to fetch topics: ${cardsError.message}`);
+  }
+
+  // Get unique topics
+  const uniqueTopics = [...new Set((allCards || []).map(card => card.topic))];
+  
+  // Count each topic separately
+  const topicCounts: TopicWithCount[] = [];
+  
+  for (const topic of uniqueTopics) {
+    const { count, error: countError } = await supabase
+      .from('cards')
+      .select('*', { count: 'exact', head: true })
+      .eq('topic', topic);
+    
+    if (!countError && count !== null) {
+      topicCounts.push({ topic, count });
+    }
+  }
+
+  return topicCounts.sort((a, b) => a.topic.localeCompare(b.topic));
 }
 
 export async function getCardsByTopic(topic?: string): Promise<Card[]> {
